@@ -7,15 +7,15 @@
     
     <script src="https://cdn.staticfile.net/lz-string/1.5.0/lz-string.min.js"></script>
     
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;700&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;700&family=Noto+Serif+TC:wght@300;400;700&family=Noto+Serif+JP:wght@300;400;700&display=swap">
     
     <style>
         /* ============================
            基础变量与全局设定
            ============================ */
         :root {
-            /* 强制优先使用云端宋体，确保东方精致感 */
-            --font-serif: 'Noto Serif SC', 'Songti SC', 'STSong', 'SimSun', serif;
+            /* 核心修复：建立严密的字体回退链，确保“橸”字绝对能找到对应的宋体渲染 */
+            --font-serif: 'Noto Serif SC', 'Noto Serif TC', 'Noto Serif JP', 'Songti SC', 'STSong', 'SimSun', serif;
             --font-sans: -apple-system, "PingFang SC", "Helvetica Neue", "Microsoft YaHei", sans-serif;
             
             /* 字体颜色：清晰深邃的墨褐色 */
@@ -81,15 +81,15 @@
             color: var(--text-sub); text-align: center;
         }
         
-        /* 修复点3：新增的卡背点击翻转提示语样式 */
+        /* 新增的卡背点击翻转提示语样式 */
         .back-hint-text {
-            margin-top: 25px; /* 距离上方LOGO的留白 */
+            margin-top: 25px; 
             font-size: 0.65rem; 
-            font-family: var(--font-sans); /* 提示语用无衬线字体更现代 */
+            font-family: var(--font-sans); 
             letter-spacing: 2px;
-            color: var(--theme-color); /* 使用主题绿 */
+            color: var(--theme-color); 
             opacity: 0.8;
-            animation: pulse-text 3s infinite ease-in-out; /* 转移呼吸灯特效到这里，引导点击 */
+            animation: pulse-text 3s infinite ease-in-out; 
         }
         @keyframes pulse-text { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
 
