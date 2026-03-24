@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>拂橸 FUJĪNG 东方美学调频卡 v5.2 (排版自定义版)</title>
+    
+    <script src="https://cdn.staticfile.net/lz-string/1.5.0/lz-string.min.js"></script>
+    
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;700&display=swap">
+    
+    <style>
+        /* ============================
+           基础变量与全局设定
+           ============================ */
+        :root {
+            /* 强制优先使用云端宋体，确保东方精致感 */
+            --font-serif: 'Noto Serif SC', 'Songti SC', 'STSong', 'SimSun', serif;
+            --font-sans: -apple-system, "PingFang SC", "Helvetica Neue", "Microsoft YaHei", sans-serif;
+            
+            /* 字体颜色：清晰深邃的墨褐色 */
+            --text-main: #2b2927; 
+            --text-sub: #66635e; 
+            
+            --sys-bg: #e6e6e6;
+            --sys-panel-bg: #ffffff;
+            --theme-color: #71907d; /* 默认甲木绿 */
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; outline: none; -webkit-tap-highlight-color: transparent; }
+        body { font-family: var(--font-sans); background-color: var(--sys-bg); color: var(--text-main); height: 100vh; overflow: hidden; display: flex; }
+
+        /* 后台布局 */
+        .preview-area { flex: 1; display: flex; justify-content: center; align-items: center; background-color: #dcdcdc; padding: 20px; perspective: 1200px; overflow: hidden;}
+        .control-panel { width: 380px; background-color: var(--sys-panel-bg); border-left: 1px solid #ccc; display: flex; flex-direction: column; z-index: 10; }
+        .control-scroll-area { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 15px; }
+        .control-bottom-fixed { padding: 20px 24px; background-color: #fcfcfc; border-top: 1px solid #eee; }
+
+        /* 3D 翻转卡片容器 */
+        .card-3d-wrapper { width: 100%; max-width: 360px; aspect-ratio: 1 / 1.618; position: relative; will-change: transform; transition: max-height 0.3s;}
+        
+        .card-flipper { 
+            width: 100%; height: 100%; position: relative; 
+            transition: transform 1.2s cubic-bezier(0.68, -0.2, 0.265, 1.15); 
+            transform-style: preserve-3d;
+        }
+        .card-flipper.flipped { transform: rotateY(180deg); }
+
+        /* ============================
+           极简稳定的卡片物理层
+           ============================ */
+        .card-face {
+            position: absolute; width: 100%; height: 100%; 
+            backface-visibility: hidden; -webkit-backface-visibility: hidden;
+            border-radius: 4px; 
+            box-shadow: 0 20px 50px rgba(0,0,0,0.12), inset 0 0 0 1px rgba(255,255,255,0.4);
+            background: linear-gradient(135deg, #edf1ee 0%, #dce4dd 100%);
+            display: flex; flex-direction: column;
+        }
+
+        /* ============================
+           卡背排版 (缩小字号，收敛间距)
+           ============================ */
+        .card-back { transform: rotateY(0deg); justify-content: center; align-items: center; cursor: pointer; }
+        
+        .back-logo-box {
+            display: flex; flex-direction: column; align-items: center;
+            font-family: var(--font-serif);
+        }
+        .back-text-cn { 
+            font-size: 2.2rem; 
+            font-weight: normal; 
+            letter-spacing: 0.3em; margin-right: -0.3em; 
+            color: var(--text-main); 
+            line-height: 1; margin-bottom: 8px; text-align: center;
+        }
+        .back-text-en { 
+            font-size: 0.75rem; 
+            font-weight: normal; 
+            letter-spacing: 0.5em; margin-right: -0.5em; 
+            color: var(--text-sub); text-align: center;
+        }
+        
+        /* 修复点3：新增的卡背点击翻转提示语样式 */
+        .back-hint-text {
+            margin-top: 25px; /* 距离上方LOGO的留白 */
+            font-size: 0.65rem; 
+            font-family: var(--font-sans); /* 提示语用无衬线字体更现代 */
+            letter-spacing: 2px;
+            color: var(--theme-color); /* 使用主题绿 */
+            opacity: 0.8;
+            animation: pulse-text 3s infinite ease-in-out; /* 转移呼吸灯特效到这里，引导点击 */
+        }
+        @keyframes pulse-text { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
+
+        /* ============================
+           卡片正面排版
+           ============================ */
+        .card-front { transform: rotateY(180deg); padding: 50px 25px 65px 25px; font-family: var(--font-serif); }
+        
+        /* 右上角透明跳转按钮 */
+        .top-action-bar { position: absolute; top: 15px; right: 15px; z-index: 10; }
+        .header-playlist-link {
+            display: inline-flex; align-items: center; gap: 4px;
+            font-size: 0.65rem; color: var(--text-sub); text-decoration: none;
+            background-color: transparent; border: none; padding: 4px; border-radius: 4px;
+            font-family: var(--font-sans); font-weight: normal; transition: all 0.3s;
+        }
+        .header-playlist-link:hover { color: var(--theme-color); }
+        .header-playlist-link i { font-style: normal; font-size: 0.85rem; }
+
+        .card-header { text-align: center; margin-bottom: 25px; }
+        .header-eng { font-size: 0.75rem; letter-spacing: 2px; color: var(--text-sub); margin-bottom: 8px; text-transform: uppercase;}
+        .header-title { font-size: 1.6rem; font-weight: bold; letter-spacing: 4px; color: var(--text-main); margin-bottom: 6px;}
+        .title-dot { color: var(--theme-color); font-size: 12px; margin: 0 6px; position: relative; top: -2px; }
+        .header-sub { font-size: 0.95rem; color: var(--text-sub); letter-spacing: 6px; }
+
+        .greeting { font-size: 1.25rem; margin-bottom: 20px; letter-spacing: 1px; color: var(--text-main); }
+        .info-row { display: flex; align-items: center; margin-bottom: 16px; font-size: 0.95rem; color: var(--text-main); }
+        .info-label { width: 80px; color: var(--text-sub); }
+        
+        .element-badge { background-color: var(--theme-color); color: #fff; padding: 4px 12px; border-radius: 4px; margin-right: 12px; transition: 0.5s; font-family: var(--font-sans); font-size: 0.9rem; letter-spacing: 2px; text-indent: 2px; font-weight: normal;}
+        .element-desc { color: var(--theme-color); transition: 0.5s; font-weight: bold; font-family: var(--font-serif);}
+
+        .oriental-divider { width: 100%; height: 1px; margin: 20px 0; background: linear-gradient(to right, transparent, rgba(0,0,0,0.15), transparent); position: relative; }
+        .oriental-divider::after { content: '✦'; position: absolute; top: -10px; left: 50%; transform: translateX(-50%); color: var(--theme-color); font-size: 14px; padding: 0 10px; opacity: 0.8; }
+
+        .fortune-area { 
+            flex: 1; letter-spacing: 1px; 
+            color: var(--text-main); white-space: pre-wrap; overflow-y: auto; margin-bottom: 15px;
+            font-size: 0.95rem; line-height: 1.8; 
+        }
+
+        .card-footer { position: absolute; bottom: 15px; right: 20px; font-size: 0.7rem; color: var(--text-sub); opacity: 0.6; letter-spacing: 1px; font-family: var(--font-sans); }
+        
+        .editable { cursor: text; border-bottom: 1px dashed transparent; transition: 0.3s; }
+        .editable:hover, .editable:focus { border-bottom-color: var(--theme-color); }
+
+        /* ============================
+           后台控件样式 
+           ============================ */
+        .ctrl-group { display: flex; flex-direction: column; gap: 6px; }
+        .ctrl-label { font-size: 0.8rem; color: #888; text-transform: uppercase; font-weight: bold;}
+        .ctrl-input { padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-family: var(--font-sans); font-size: 0.9rem;}
+        .ctrl-select { padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-family: var(--font-sans); font-size: 0.9rem; background-color: #fff; cursor: pointer;}
+        .ctrl-textarea { min-height: 100px; resize: vertical; line-height: 1.6; }
+        
+        .range-slider {
+            -webkit-appearance: none; width: 100%; height: 4px; border-radius: 2px;
+            background: #e0e0e0; outline: none; margin: 0 8px;
+        }
+        .range-slider::-webkit-slider-thumb {
+            -webkit-appearance: none; appearance: none; width: 14px; height: 14px;
+            border-radius: 50%; background: var(--theme-color); cursor: pointer; transition: 0.2s;
+        }
+        .range-slider::-webkit-slider-thumb:hover { transform: scale(1.2); }
+        
+        .btn-primary { width: 100%; background-color: #2b2b2b; color: #fff; border: none; padding: 15px; border-radius: 6px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: 0.2s; }
+        .btn-primary:active { transform: scale(0.98); background-color: #000; }
+        .export-result { display: none; text-align: center; margin-top: 10px; }
+        .export-result input { width: 100%; padding: 10px; background: #f0f0f0; border: 1px solid #ccc; font-family: monospace; border-radius: 6px; font-size: 0.75rem;}
+
+        /* 阅览模式 (沉浸模式) */
+        body { background-color: #111; }
+        .control-panel { z-index: 10; transition: transform 0.3s; }
+        .preview-area { z-index: 1;}
+        .preview-area.immersive-view { padding: 0; background-color: transparent; }
+        .preview-area.immersive-view .card-3d-wrapper { max-height: 90vh; max-width: 90vw; }
+        .preview-area.immersive-view .editable { border-bottom: none; pointer-events: none; }
+    </style>
+</head>
+<body>
+
+    <main class="preview-area" id="preview-area">
+        <div class="card-3d-wrapper" id="print-card">
+            <div class="card-flipper" id="card-flipper">
+                
+                <div class="card-face card-back" id="card-back">
+                    <div class="back-logo-box">
+                        <div class="back-text-cn">拂橸</div>
+                        <div class="back-text-en">FUJĪNG</div>
+                        <div class="back-hint-text">点击翻转查看您的专属能量名片</div>
+                    </div>
+                </div>
+
+                <div class="card-face card-front">
+                    
+                    <div class="top-action-bar">
+                        <a href="#" target="_blank" class="header-playlist-link" id="card-playlist-btn">
+                            <i>🎵</i> 点击跳转至网易云聆听疗愈歌单
+                        </a>
+                    </div>
+                    
+                    <div class="card-header">
+                        <div class="header-eng">Welcome to FUJĪNG</div>
+                        <div class="header-title">五行<span class="title-dot">✦</span>能量</div>
+                        <div class="header-sub">调频指南</div>
+                    </div>
+                    
+                    <div class="card-body">
+                        <div class="greeting">您好，<span id="edit-name" class="editable" contenteditable="true">访客</span></div>
+                        
+                        <div class="info-row">
+                            <div class="info-label">五行细分</div>
+                            <div class="element-badge" id="badge-zh">甲木</div>
+                            <div class="element-desc" id="badge-meaning">参天之树，刚健向上</div>
+                        </div>
+                        
+                        <div class="info-row">
+                            <div class="info-label">喜忌用神</div>
+                            <div class="editable" id="edit-god" contenteditable="true">喜水木，忌金土</div>
+                        </div>
+                        
+                        <div class="oriental-divider"></div>
+                        
+                        <div class="fortune-area editable" id="edit-fortune" contenteditable="true">带来生发之气。
+适合缺乏动力、目标不清的人。</div>
+                    </div>
+                    
+                    <div class="card-footer">更多服务内容请扫码咨询老师</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <aside class="control-panel" id="control-panel">
+        <div class="control-scroll-area">
+            <h2 style="font-size: 1.1rem; border-bottom: 1px solid #eee; padding-bottom: 10px; margin: 0;">生产后台中心</h2>
+            
+            <div class="ctrl-group">
+                <label class="ctrl-label">客户姓名</label>
+                <input type="text" id="ctrl-name" class="ctrl-input" value="访客">
+            </div>
+
+            <div class="ctrl-group">
+                <label class="ctrl-label">五行十天干属性细分</label>
+                <select id="ctrl-element-select" class="ctrl-select">
+                    <optgroup label="木 (生发)">
+                        <option value="jia">甲木 (参天之树，刚健向上)</option>
+                        <option value="yi">乙木 (花草柔蔓，坚韧细腻)</option>
+                    </optgroup>
+                    <optgroup label="火 (光热)">
+                        <option value="bing">丙火 (太阳之火，热情慷慨)</option>
+                        <option value="ding">丁火 (星烛之光，温和敏锐)</option>
+                    </optgroup>
+                    <optgroup label="土 (承载)">
+                        <option value="wu">戊土 (高山厚土，稳健包容)</option>
+                        <option value="ji">己土 (田园之土，细腻滋养)</option>
+                    </optgroup>
+                    <optgroup label="金 (收敛)">
+                        <option value="geng">庚金 (刀剑之金，刚毅果断)</option>
+                        <option value="xin">辛金 (珠玉之金，精致闪耀)</option>
+                    </optgroup>
+                    <optgroup label="水 (滋润)">
+                        <option value="ren">壬水 (江河之水，奔放自由)</option>
+                        <option value="gui">癸水 (雨露之水，内敛灵动)</option>
+                    </optgroup>
+                </select>
+            </div>
+
+            <div class="ctrl-group">
+                <label class="ctrl-label">喜忌用神</label>
+                <input type="text" id="ctrl-god" class="ctrl-input" value="喜水木，忌金土">
+            </div>
+
+            <div class="ctrl-group">
+                <label class="ctrl-label">留白调频正文</label>
+                <textarea id="ctrl-fortune" class="ctrl-input ctrl-textarea">带来生发之气。
+适合缺乏动力、目标不清的人。</textarea>
+                
+                <div style="display:flex; justify-content:space-between; margin-top:6px; background:#f5f5f5; padding:10px; border-radius:6px;">
+                    <div style="display:flex; align-items:center; width:48%; font-size:0.75rem; color:#666;">
+                        <span style="white-space:nowrap;">字号</span>
+                        <input type="range" id="ctrl-font-size" class="range-slider" min="0.75" max="1.25" step="0.05" value="0.95">
+                    </div>
+                    <div style="display:flex; align-items:center; width:48%; font-size:0.75rem; color:#666;">
+                        <span style="white-space:nowrap;">行距</span>
+                        <input type="range" id="ctrl-line-height" class="range-slider" min="1.3" max="2.5" step="0.1" value="1.8">
+                    </div>
+                </div>
+            </div>
+
+            <div class="ctrl-group">
+                <label class="ctrl-label" style="color:#2ca559;">🎵 专属歌单链接 (选填)</label>
+                <input type="text" id="ctrl-playlist" class="ctrl-input" placeholder="输入网易云分享链接(不填则隐藏)" value="https://music.163.com/">
+            </div>
+        </div>
+        
+        <div class="control-bottom-fixed">
+            <button id="btn-export" class="btn-primary">生成专属 NFC 链接</button>
+            <div id="export-result" class="export-result">
+                <p style="color:#28a745; font-size: 0.85rem; margin-bottom: 5px; font-weight: bold;" id="byte-size-msg">✓ 极限压缩成功</p>
+                <input type="text" id="nfc-input" readonly>
+            </div>
+        </div>
+    </aside>
+
+    <script>
+        const PRODUCTION_URL = "https://gilded-marzipan-13c5d9.netlify.app/"; 
+
+        const subElementsMap = ['jia', 'yi', 'bing', 'ding', 'wu', 'ji', 'geng', 'xin', 'ren', 'gui'];
+        const config = {
+            jia:  { color: '#71907d', zh: '甲木', meaning: '参天之树，刚健向上' },
+            yi:   { color: '#8aa393', zh: '乙木', meaning: '花草柔蔓，坚韧细腻' },
+            bing: { color: '#b86d6d', zh: '丙火', meaning: '太阳之火，热情慷慨' },
+            ding: { color: '#c78b8b', zh: '丁火', meaning: '星烛之光，温和敏锐' },
+            wu:   { color: '#a68c5b', zh: '戊土', meaning: '高山厚土，稳健包容' },
+            ji:   { color: '#b59f7d', zh: '己土', meaning: '田园之土，细腻滋养' },
+            geng: { color: '#7a8594', zh: '庚金', meaning: '刀剑之金，刚毅果断' },
+            xin:  { color: '#8c96a3', zh: '辛金', meaning: '珠玉之金，精致闪耀' },
+            ren:  { color: '#688b9c', zh: '壬水', meaning: '江河之水，奔放自由' },
+            gui:  { color: '#7a9cb3', zh: '癸水', meaning: '雨露之水，内敛灵动' }
+        };
+
+        let cardData = { 
+            name: '访客', subElement: 'jia', god: '喜水木，忌金土', 
+            fortune: '带来生发之气。\n适合缺乏动力、目标不清的人。', 
+            playlist: 'https://music.163.com/',
+            fontSize: '0.95',
+            lineHeight: '1.8'
+        };
+
+        const printCard = document.getElementById('print-card');
+        const cardFlipper = document.getElementById('card-flipper');
+        const cardBack = document.getElementById('card-back');
+        const domName = document.getElementById('edit-name');
+        const domGod = document.getElementById('edit-god');
+        const domFortune = document.getElementById('edit-fortune');
+        const domBadgeZh = document.getElementById('badge-zh');
+        const domBadgeMeaning = document.getElementById('badge-meaning');
+        const cardPlaylistBtn = document.getElementById('card-playlist-btn');
+        const previewArea = document.getElementById('preview-area');
+        const controlPanel = document.getElementById('control-panel');
+        
+        const ctrlName = document.getElementById('ctrl-name');
+        const ctrlGod = document.getElementById('ctrl-god');
+        const ctrlFortune = document.getElementById('ctrl-fortune');
+        const ctrlPlaylist = document.getElementById('ctrl-playlist');
+        const ctrlElementSelect = document.getElementById('ctrl-element-select');
+        const ctrlFontSize = document.getElementById('ctrl-font-size');
+        const ctrlLineHeight = document.getElementById('ctrl-line-height');
+
+        function updateUI() {
+            const currentConf = config[cardData.subElement];
+            
+            printCard.style.setProperty('--theme-color', currentConf.color);
+            
+            domBadgeZh.textContent = currentConf.zh;
+            domBadgeMeaning.textContent = currentConf.meaning;
+            domName.innerText = cardData.name;
+            domGod.innerText = cardData.god;
+            domFortune.innerText = cardData.fortune;
+            
+            domFortune.style.fontSize = cardData.fontSize + 'rem';
+            domFortune.style.lineHeight = cardData.lineHeight;
+            
+            if (cardData.playlist && cardData.playlist.trim() !== '') {
+                cardPlaylistBtn.style.display = 'inline-flex';
+                let finalUrl = cardData.playlist.trim();
+                if (!finalUrl.startsWith('http')) finalUrl = 'https://' + finalUrl;
+                cardPlaylistBtn.href = finalUrl;
+            } else {
+                cardPlaylistBtn.style.display = 'none';
+            }
+
+            ctrlName.value = cardData.name;
+            ctrlGod.value = cardData.god;
+            ctrlFortune.value = cardData.fortune;
+            ctrlPlaylist.value = cardData.playlist;
+            ctrlElementSelect.value = cardData.subElement;
+            ctrlFontSize.value = cardData.fontSize;
+            ctrlLineHeight.value = cardData.lineHeight;
+        }
+
+        ctrlName.addEventListener('input', (e) => { cardData.name = e.target.value; domName.innerText = cardData.name; });
+        ctrlGod.addEventListener('input', (e) => { cardData.god = e.target.value; domGod.innerText = cardData.god; });
+        ctrlFortune.addEventListener('input', (e) => { cardData.fortune = e.target.value; domFortune.innerText = cardData.fortune; });
+        ctrlPlaylist.addEventListener('input', (e) => { cardData.playlist = e.target.value; updateUI(); });
+        ctrlElementSelect.addEventListener('change', (e) => { cardData.subElement = e.target.value; updateUI(); });
+        ctrlFontSize.addEventListener('input', (e) => { cardData.fontSize = e.target.value; updateUI(); });
+        ctrlLineHeight.addEventListener('input', (e) => { cardData.lineHeight = e.target.value; updateUI(); });
+
+        domName.addEventListener('input', (e) => { cardData.name = e.target.innerText; ctrlName.value = cardData.name; });
+        domGod.addEventListener('input', (e) => { cardData.god = e.target.innerText; ctrlGod.value = cardData.god; });
+        domFortune.addEventListener('input', (e) => { cardData.fortune = e.target.innerText; ctrlFortune.value = cardData.fortune; });
+
+        cardBack.addEventListener('click', () => { cardFlipper.classList.add('flipped'); });
+
+        document.getElementById('btn-export').addEventListener('click', () => {
+            const dataArray = [ 
+                cardData.name, subElementsMap.indexOf(cardData.subElement), cardData.god, 
+                cardData.fortune, cardData.playlist, cardData.fontSize, cardData.lineHeight 
+            ];
+            const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(dataArray));
+            
+            let baseUrl = "";
+            if (window.location.protocol === 'file:') {
+                if (PRODUCTION_URL.includes("your-fujing-site.netlify.app")) {
+                    alert("⚠️ 记得上线后把 PRODUCTION_URL 换成真实域名哦！");
+                    return; 
+                }
+                baseUrl = PRODUCTION_URL;
+            } else {
+                baseUrl = window.location.origin + window.location.pathname;
+            }
+            
+            const url = baseUrl + '?d=' + compressed;
+            const nfcInput = document.getElementById('nfc-input');
+            document.getElementById('export-result').style.display = 'block';
+            nfcInput.value = url;
+            
+            setTimeout(() => { nfcInput.focus(); nfcInput.select(); }, 50);
+            const byteSize = new Blob([url]).size;
+            document.getElementById('byte-size-msg').innerText = `✓ 压缩成功，大约 ${byteSize} 字节`;
+        });
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const compressedStr = new URLSearchParams(window.location.search).get('d'); 
+            const isMobileDevice = window.innerWidth <= 800;
+
+            if (compressedStr || isMobileDevice) {
+                previewArea.classList.add('immersive-view');
+                controlPanel.style.display = 'none';
+
+                if (compressedStr) {
+                    try {
+                        const decompressed = LZString.decompressFromEncodedURIComponent(compressedStr);
+                        if (decompressed) {
+                            const parsedArray = JSON.parse(decompressed);
+                            cardData = {
+                                name: parsedArray[0] || '访客',
+                                subElement: subElementsMap[parsedArray[1]] || 'jia',
+                                god: parsedArray[2] || '',
+                                fortune: parsedArray[3] || '',
+                                playlist: parsedArray[4] !== undefined ? parsedArray[4] : '',
+                                fontSize: parsedArray[5] !== undefined ? parsedArray[5] : '0.95',
+                                lineHeight: parsedArray[6] !== undefined ? parsedArray[6] : '1.8'
+                            };
+                        }
+                    } catch(e) {}
+                }
+                cardFlipper.classList.remove('flipped');
+            } else {
+                ctrlFortune.value = cardData.fortune;
+                cardFlipper.classList.add('flipped'); 
+            }
+            updateUI();
+        });
+    </script>
+</body>
+</html>
